@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu App</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f4f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .menu-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .menu-container h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        ul.level-1 {
+            list-style-type: none;
+            padding: 0;
+        }
+        li.level-2 {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        li.level-2:hover {
+            background-color: #e9ecef;
+        }
+        li.level-2 a {
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        li.level-2 a:hover {
+            color: #007bff;
+        }
+        .menu-item {
+            display: flex;
+            align-items: center;
+        }
+        .menu-item i {
+            margin-right: 10px;
+            color: #007bff;
+            cursor: pointer;
+        }
+        .menu-item .fa-chevron-down {
+            color: #28a745;
+        }
+        .menu-item .fa-chevron-right {
+            color: #6c757d;
+        }
+        ul.level-1 ul.level-1 {
+            padding-left: 30px;
+        }
+        .error-message {
+            text-align: center;
+            color: #dc3545;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <h1><i class="fas fa-sitemap me-2"></i>Menu Hierarchy</h1>
+        <div id="menu-container"></div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Hàm để lấy dữ liệu từ API và hiển thị menu
+        async function fetchMenu() {
+            try {
+                const response = await fetch('http://localhost:3000/api/menu');
+                const menuData = await response.json();
+                displayMenu(menuData);
+            } catch (error) {
+                console.error('Error fetching menu:', error);
+                document.getElementById('menu-container').innerHTML = '<p class="error-message">Error loading menu.</p>';
+            }
+        }
+
+        // Hàm để hiển thị menu theo cấu trúc cha-con
+        function displayMenu(menuItems) {
+            const container = document.getElementById('menu-container');
+            container.innerHTML = ''; // Xóa nội dung cũ
+
+            // Tạo <ul> cho level 1 (menu cha)
+            const ul = document.createElement('ul');
+            ul.className = 'level-1';
+
+            menuItems.forEach((item, index) => {
+                // Tạo <li> cho level 2 (menu con)
+                const li = document.createElement('li');
+                li.className = 'level-2';
+
+                // Tạo div chứa menu item
+                const menuItemDiv = document.createElement('div');
+                menuItemDiv.className = 'menu-item';
+
+                // Thêm icon và link
+                if (item.children && item.children.length > 0) {
+                    // Nếu có menu con, thêm icon chevron và collapse
+                    const collapseId = `collapse-${index}`;
+                    menuItemDiv.innerHTML = `
+                        <i class="fas fa-chevron-right" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false"></i>
+                        <a href="${item.url}">${item.text}</a>
+                    `;
+
+                    // Tạo <ul> lồng cho menu con
+                    const childUl = document.createElement('ul');
+                    childUl.className = 'level-1 collapse';
+                    childUl.id = collapseId;
+
+                    item.children.forEach((child, childIndex) => {
+                        const childLi = document.createElement('li');
+                        childLi.className = 'level-2';
+                        childLi.innerHTML = `<div class="menu-item"><i class="fas fa-link"></i><a href="${child.url}">${child.text}</a></div>`;
+                        childUl.appendChild(childLi);
+                    });
+
+                    li.appendChild(menuItemDiv);
+                    li.appendChild(childUl);
+                } else {
+                    // Nếu không có menu con, chỉ hiển thị link
+                    menuItemDiv.innerHTML = `<i class="fas fa-link"></i><a href="${item.url}">${item.text}</a>`;
+                    li.appendChild(menuItemDiv);
+                }
+
+                ul.appendChild(li);
+            });
+
+            container.appendChild(ul);
+
+            // Thêm sự kiện để thay đổi icon khi collapse/expand
+            document.querySelectorAll('.menu-item i[data-bs-toggle="collapse"]').forEach(icon => {
+                icon.addEventListener('click', function () {
+                    const isExpanded = this.classList.contains('fa-chevron-down');
+                    this.classList.toggle('fa-chevron-down', !isExpanded);
+                    this.classList.toggle('fa-chevron-right', isExpanded);
+                });
+            });
+        }
+
+        // Gọi hàm fetchMenu khi trang được tải
+        window.onload = fetchMenu;
+    </script>
+</body>
+</html>
